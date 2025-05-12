@@ -460,3 +460,120 @@
 )
 
 
+(define-map MaintenanceCosts
+    { service-id: uint }
+    {
+        labor-cost: uint,
+        parts-cost: uint,
+        additional-fees: uint,
+        currency: (string-ascii 3)
+    }
+)
+
+(define-map EquipmentCostSummary
+    { equipment-id: uint }
+    {
+        total-spent: uint,
+        last-service-cost: uint,
+        service-count: uint,
+        avg-cost-per-service: uint
+    }
+)
+
+(define-public (record-service-cost (service-id uint) 
+                                  (labor uint) 
+                                  (parts uint) 
+                                  (fees uint) 
+                                  (currency (string-ascii 3)))
+    (let ((service (map-get? ServiceHistory {service-id: service-id})))
+        (asserts! (is-some service) err-not-found)
+        (map-set MaintenanceCosts
+            {service-id: service-id}
+            {
+                labor-cost: labor,
+                parts-cost: parts,
+                additional-fees: fees,
+                currency: currency
+            }
+        )
+        (update-cost-summary (get equipment-id (unwrap-panic service)) (+ labor parts fees))
+        (ok true)
+    )
+)
+
+(define-private (update-cost-summary (equipment-id uint) (service-cost uint))
+    (let ((summary (default-to 
+            {total-spent: u0, last-service-cost: u0, service-count: u0, avg-cost-per-service: u0}
+            (map-get? EquipmentCostSummary {equipment-id: equipment-id}))))
+        (map-set EquipmentCostSummary
+            {equipment-id: equipment-id}
+            {
+                total-spent: (+ (get total-spent summary) service-cost),
+                last-service-cost: service-cost,
+                service-count: (+ (get service-count summary) u1),
+                avg-cost-per-service: (/ (+ (get total-spent summary) service-cost) 
+                                       (+ (get service-count summary) u1))
+            }
+        )
+    )
+)
+
+
+(define-map ServiceRatings
+    { service-id: uint }
+    {
+        rating: uint,
+        review: (string-ascii 200),
+        rated-by: principal,
+        rating-date: uint
+    }
+)
+
+(define-map ProviderRatingSummary
+    { provider: principal }
+    {
+        total-ratings: uint,
+        rating-count: uint,
+        avg-rating: uint
+    }
+)
+
+(define-public (rate-service (service-id uint) 
+                           (rating uint) 
+                           (review (string-ascii 200)))
+    (let ((service (map-get? ServiceHistory {service-id: service-id}))
+          (equipment (unwrap-panic (map-get? Equipment 
+                    {equipment-id: (get equipment-id (unwrap-panic service))}))))
+        (asserts! (is-some service) err-not-found)
+        (asserts! (is-eq tx-sender (get owner equipment)) err-unauthorized)
+        (asserts! (<= rating u5) (err u107))
+        
+        (map-set ServiceRatings
+            {service-id: service-id}
+            {
+                rating: rating,
+                review: review,
+                rated-by: tx-sender,
+                rating-date: stacks-block-height
+            }
+        )
+        (update-provider-rating (get provider (unwrap-panic service)) rating)
+        (ok true)
+    )
+)
+
+(define-private (update-provider-rating (provider principal) (new-rating uint))
+    (let ((summary (default-to 
+            {total-ratings: u0, rating-count: u0, avg-rating: u0}
+            (map-get? ProviderRatingSummary {provider: provider}))))
+        (map-set ProviderRatingSummary
+            {provider: provider}
+            {
+                total-ratings: (+ (get total-ratings summary) new-rating),
+                rating-count: (+ (get rating-count summary) u1),
+                avg-rating: (/ (+ (get total-ratings summary) new-rating) 
+                             (+ (get rating-count summary) u1))
+            }
+        )
+    )
+)

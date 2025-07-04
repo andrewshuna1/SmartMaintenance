@@ -10,6 +10,11 @@ path = 'contracts/MaintenanceAlerts.clar'
 clarity_version = 3
 epoch = 3.1
 
+[contracts.AlertEscalation]
+path = 'contracts/AlertEscalation.clar'
+clarity_version = 3
+epoch = 3.1
+
 [contracts.SmartMaintenance]
 path = 'contracts/SmartMaintenance.clar'
 clarity_version = 3

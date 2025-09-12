@@ -1,0 +1,39 @@
+[project]
+name = 'SmartMaintenance'
+description = ''
+authors = []
+telemetry = true
+cache_dir = '.\.cache'
+requirements = []
+[contracts.MaintenanceAlerts]
+path = 'contracts/MaintenanceAlerts.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.AlertEscalation]
+path = 'contracts/AlertEscalation.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SmartMaintenance]
+path = 'contracts/SmartMaintenance.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.MaintenanceScheduler]
+path = 'contracts/MaintenanceScheduler.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.MaintenanceInventory]
+path = 'contracts/MaintenanceInventory.clar'
+clarity_version = 3
+epoch = 3.1
+[repl.analysis]
+passes = ['check_checker']
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false
